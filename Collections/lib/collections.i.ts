@@ -1,4 +1,7 @@
-export interface ICollection<T> extends Enumerator<T>{
+import { IEnumerator } from "./enumerator.i";
+import { IEnumerable } from "./i.enumerable";
+
+export interface ICollection<T> extends IEnumerable<T>{
     Count(): number;
 
     IsReadOnly(): boolean;
@@ -7,11 +10,11 @@ export interface ICollection<T> extends Enumerator<T>{
 
     Clear(): void;
 
-    Contains():  void;
+    Contains(item: T):  boolean;
 
     CopyTo(array: T[], startingIndex: number): void;
 
-    Remove(item: T): void;
+    Remove(item: T): boolean;
 
     ToArray(): T[];
 }

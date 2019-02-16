@@ -3,7 +3,7 @@ import { ICollection } from "./collections.i";
 export interface IList<T> extends ICollection<T> {
     Get(index: number): T;
 
-    IndexOf(item: T): void;
+    IndexOf(item: T): number;
 
     /**
      * Inserts value into the list at position index.
