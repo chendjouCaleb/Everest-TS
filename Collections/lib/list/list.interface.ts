@@ -1,9 +1,9 @@
-import { ICollection } from "./collections.i";
+import { ICollection } from "../collections.interface";
 
 export interface IList<T> extends ICollection<T> {
-    Get(index: number): T;
+    get(index: number): T;
 
-    IndexOf(item: T): number;
+    indexOf(item: T): number;
 
     /**
      * Inserts value into the list at position index.
@@ -14,11 +14,11 @@ export interface IList<T> extends ICollection<T> {
      * @param index Position to put element in the array
      * @param item The object to put in List
      */
-    Insert(index: number, item: T) : void;
+    insert(index: number, item: T) : void;
 
     /**
      * Removes the item at position index.
      * @param index Removes the item at position index.
      */
-    RemoveAt(index: number): void;
+    removeAt(index: number): void;
 }

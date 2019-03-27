@@ -1,2 +1,6 @@
 node_modules
 dist
+/Collections/docs
+/Collections/node_modules
+/Collections/dist
+/Collections/.idea

@@ -1,46 +1,48 @@
-import { ICollection } from "./collections.i";
+import { ICollection } from "./collections.interface";
+import {IEnumerator} from "./enumerator.interface";
 
 export class Collection<T> implements ICollection<T>{
     private length: number = 0;
-    Count(): number{
+    count(): number{
         return this.length;
     }    
     
-    IsReadOnly(): boolean{
+    isReadOnly(): boolean{
         return false;
     }
-    Add(value: T): void {
-        throw new Error("Method not implemented.");
-    }
-    Clear(): void {
-        throw new Error("Method not implemented.");
-    }
-    Contains(): void {
-        throw new Error("Method not implemented.");
-    }
-    CopyTo(array: T[], startingIndex: number): void {
-        throw new Error("Method not implemented.");
-    }
-    Remove(item: T): void {
-        throw new Error("Method not implemented.");
-    }
-    ToArray(): T[] {
-        throw new Error("Method not implemented.");
-    }
-    atEnd(): boolean {
-        throw new Error("Method not implemented.");
-    }
-    item(): T {
-        throw new Error("Method not implemented.");
-    }
-    moveFirst(): void {
-        throw new Error("Method not implemented.");
-    }
-    moveNext(): void {
+
+    add(value: T): void {
         throw new Error("Method not implemented.");
     }
 
-    
+    clear(): void {
+        throw new Error("Method not implemented.");
+    }
+
+    copyTo(array: T[], startingIndex: number): void {
+        throw new Error("Method not implemented.");
+    }
+
+    toArray(): T[] {
+        throw new Error("Method not implemented.");
+    }
+
+    item(): T {
+        throw new Error("Method not implemented.");
+    }
+
+    contains(item: T): boolean {
+        return false;
+    }
+
+    getEnumerator(): IEnumerator<T> {
+        throw new Error();
+    }
+
+    remove(item: T): boolean {
+        return false;
+    }
+
     
 
 }

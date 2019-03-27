@@ -1,11 +1,11 @@
-import { IEnumerator } from "./enumerator.i";
+import { IEnumerator } from "./enumerator.interface";
 
 export interface IEnumerable<T>{
     /**
      * Returns an IEnumerator for this enumerable Object.  The enumerator provides
      * a simple way to access all the contents of a collection.
      */
-    GetEnumerator() : IEnumerator<T>;
+    getEnumerator() : IEnumerator<T>;
 }
 
 

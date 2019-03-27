@@ -1,18 +1,17 @@
-import { IList } from "./list.i";
-import { IEnumerable } from "./i.enumerable";
-import { NullArgumentException } from "./expection/null.argument.exception";
-import { IEnumerator } from "./enumerator.i";
-import { ArgumentOutOfRangeException } from "./expection/argument.out.of.range.exception";
-import { Collection } from "./collection";
+import { IList } from "./list.interface";
+import { IEnumerable } from "../enumerable.interface";
+import { NullArgumentException } from "../expection/null.argument.exception";
+import { IEnumerator } from "../enumerator.interface";
+import { ArgumentOutOfRangeException } from "../expection/argument.out.of.range.exception";
 import { ListEnumerator } from "./list.enumerator";
-import { uint } from "./utils";
+import { uint } from "../utils";
+import {EnumeratorIterator} from "../enumerator.iterator";
 
-export class List<T> implements IList<T>{
-    
+export class List<T> implements IList<T>, Iterable<T>{
+
     private _array: T[];
     private _size: number = 0;
-    private static readonly s_empty_array: [] = [];
-    public _version: number = 0;
+    private _version: number = 0;
     
 
     constructor(public collection?: IEnumerable<T>){
@@ -21,23 +20,43 @@ export class List<T> implements IList<T>{
         if(!collection){
             
         }else{
-            let en = collection.GetEnumerator();
-            while (en.MoveNext()){
-                this.Add(en.Current());
+            let en = collection.getEnumerator();
+            while (en.moveNext()){
+                this.add(en.current());
             }
-            en.Reset();
+            en.reset();
         }
-        
+    }
+
+    public static fromArray<T>(array: T[]): List<T>{
+        let list = new List<T>();
+        for(let i = 0; i < array.length; i++){
+            list.add(array[i]);
+        }
+        return list;
     }
 
     
 
-    get Version(){
+    get version(){
         return this._version;
     }
 
-    get Size(){
+    get size(){
         return this._size;
+    }
+
+    get isEmpty(){
+        return this._size == 0;
+    }
+
+    
+    count(): number {
+        return this._size;
+    }
+
+    isReadOnly(): boolean {
+        return false;
     }
 
 
@@ -45,7 +64,7 @@ export class List<T> implements IList<T>{
      * Gets the element at the given index.
      * @param index 
      */
-    Get(index: number): T {
+    get(index: number): T {
         if(index < 0 || index >= this._size){
             throw new ArgumentOutOfRangeException();
         }
@@ -53,16 +72,16 @@ export class List<T> implements IList<T>{
     }
     
     /**
-     * Sets the element at the given index.
-     * @param index 
-     * @param value 
+     * Sets the element at the given index. Do not confuse with {@link IList.Insert}.
+     * @param index The index to set the item.
+     * @param value The value to set.
      */
-    Set(index: number, element: T){
+    set(index: number, value: T){
         if(index < 0 || index >= this._size){
             throw new ArgumentOutOfRangeException();
         }
 
-        this._array[index] = element;
+        this._array[index] = value;
         this._version++;
     }
 
@@ -71,7 +90,7 @@ export class List<T> implements IList<T>{
      * increased by one
      * @param value 
      */
-    Add(value: T): void {
+    add(value: T): void {
         this._version++;
         this._array[this._size] = value;
         this._size++;
@@ -84,8 +103,8 @@ export class List<T> implements IList<T>{
      * capacity or the new size, whichever is larger.
      * @param collection 
      */
-    AddRange(collection: IEnumerable<T>){
-
+    addRange(collection: IEnumerable<T>){
+        this.insertRange(this._size, collection);
     }
 
 
@@ -93,9 +112,9 @@ export class List<T> implements IList<T>{
      * Returns the index of the first occurrence of a given value in a range of
      * this list. The list is searched forwards from beginning to end.
      * The elements of the list are compared to the given value using the
-     * Object.Equals method. This method uses the Array.IndexOf method to perform the search.
+     * Object.Equals method. This method uses the Array.indexOf method to perform the search.
      */
-    IndexOf(item: T, index = 0, count?:number): number {
+    indexOf(item: T, index = 0, count?:number): number {
         if(!count){
             count = this._size;
         }
@@ -119,12 +138,12 @@ export class List<T> implements IList<T>{
      * is increased by one. If required, the capacity of the list is doubled
      * before inserting the new element.
      */
-    Insert(index: number, item: T): void {
+    insert(index: number, item: T): void {
         if(uint(index) > this._size){
             throw new ArgumentOutOfRangeException();
         }
         let temp: T[] = [];
-        this.CopyTo(temp, index);
+        this.copyTo(temp, index);
         this._array[index] = item;
 
         for(let i = 0; i < temp.length; i++){
@@ -143,7 +162,7 @@ export class List<T> implements IList<T>{
      * @param index 
      * @param collection 
      */
-    InsertRange(index: number, collection: IEnumerable<T>){
+    insertRange(index: number = 0, collection: IEnumerable<T>){
         if(collection == null){
             throw new NullArgumentException("The collection argument is null");
         }
@@ -153,18 +172,19 @@ export class List<T> implements IList<T>{
         }
 
         let temp: T[] = [];
-        this.CopyTo(temp, index);
+        this.copyTo(temp, index);
 
-        let enumerator = collection.GetEnumerator();
-        let i = index;
-        while(enumerator.MoveNext()){
-            this._array[i] = enumerator.Current();
-            i++;
+        let enumerator = collection.getEnumerator();
+        let lastIndex = index;
+        while(enumerator.moveNext()){
+            this._array[lastIndex] = enumerator.current();
+            lastIndex++;
             this._version++;
             this._size++;
         }
-        for(let i = 0; i < temp.length; i++){
-            this._array[index + i + 1] = temp[i];
+        for(let i = 0, j=lastIndex; i < temp.length; i++, j++){
+            this._array[j] = temp[i];
+
         } 
     }
 
@@ -202,19 +222,19 @@ export class List<T> implements IList<T>{
     }
 
     /**
-     * Removes the element at the given index. The size of the list is
-     * decreased by one.
+     * Removes the element which is equals to {@link @param item}.
+     * The size of the list is decreased by one.
      * @param item  item to remove
      * @returns true if the item has found and removed
      */
-    Remove(item: T): boolean {
+    remove(item: T): boolean {
         if(item == null){
             throw new NullArgumentException("Cannot remove null value from list");
         }
 
-        let index = this.IndexOf(item);
+        let index = this.indexOf(item);
         if(index >= 0){
-            this.RemoveAt(index);
+            this.removeAt(index);
             return true;
         }
         return false;
@@ -226,13 +246,13 @@ export class List<T> implements IList<T>{
      * decreased by one.
      * @param index 
      */
-    RemoveAt(index: number): void {
+    removeAt(index: number): void {
         if(uint(index) >= uint(this._size)){
             throw new ArgumentOutOfRangeException();
         }
 
         for(let i = index; i < this._array.length - 1; i++){
-            this._array[index + i] = this._array[index + i + 1];
+            this._array[i] = this._array[1 + i];
         }
         this._size--;
         this._array.pop();
@@ -244,7 +264,7 @@ export class List<T> implements IList<T>{
      * @param index Starting index 
      * @param count Number of items to remove
      */
-    RemoveRange(index: number, count: number): void{
+    removeRange(index: number, count: number): void{
         if(index < 0){
             throw new ArgumentOutOfRangeException("The index must not be a negative number");
         }
@@ -271,7 +291,7 @@ export class List<T> implements IList<T>{
         this._version++;
     }
 
-    Reverse(): void{
+    reverse(): void{
         this._array.reverse();
         this._version++;
     }
@@ -284,7 +304,7 @@ export class List<T> implements IList<T>{
      * @param start 
      * @param count 
      */
-    ReverseRange(start: number, count: number): void{
+    reverseRange(start: number, count: number): void{
         if(start < 0){
             throw new ArgumentOutOfRangeException("The index must not be a negative number");
         }
@@ -310,25 +330,25 @@ export class List<T> implements IList<T>{
     }
 
     /**
-     * Sorts the elements in this list.  Uses Array.Sort with the
+     * Sorts the elements in this list.  Uses Array.sort with the
      * provided comparer. function
      * @param compareFn The comparer function
      * @default compareFn The default ASCII character comparer
      */
-    Sort(compareFn?: (a: T, b: T) => number): void{
+    sort(compareFn?: (a: T, b: T) => number): void{
         this._array.sort(compareFn);
         this._version++;
     }
 
     /**
-     * Sorts the elements in a given range of a list.  Uses Array.Sort with the
+     * Sorts the elements in a given range of a list.  Uses Array.sort with the
      * provided comparer. function
      * @param compareFn The comparer function
      * @default compareFn The default ASCII character comparer
      * @param start first index of a range
      * @param count Number of element to include in a range
      */
-    SortRange(start: number, count: number, compareFn?: (a: T, b: T) => number): void{
+    sortRange(start: number, count: number, compareFn?: (a: T, b: T) => number): void{
 
         if(start < 0){
             throw new ArgumentOutOfRangeException("The index must not be a negative number");
@@ -358,7 +378,7 @@ export class List<T> implements IList<T>{
      * Convert all element in the list to the Toutput type
      * @param converterFn The converter function
      */
-    public ConvertAll<TOutput>(converterFn:(item:T) => TOutput): List<TOutput> {
+    public convertAll<TOutput>(converterFn:(item:T) => TOutput): List<TOutput> {
         if(converterFn == null){
             throw new NullArgumentException("The converter function must be a non null.");
         }
@@ -373,11 +393,14 @@ export class List<T> implements IList<T>{
     }
 
 
+    public exists(matcherFn:(item: T) => boolean){
+        return this.findIndex(matcherFn) != -1;
+    }
     /**
-     * Find and return the first item that match the given function
+     * find and return the first item that match the given function
      * @param matcherFn The matcher function
      */
-    public Find(matcherFn:(item: T) => boolean): T | null {
+    public find(matcherFn:(item: T) => boolean): T | null {
         if(matcherFn == null){
             throw new NullArgumentException("The matcher function must be a non null.");
         }
@@ -391,10 +414,10 @@ export class List<T> implements IList<T>{
     
 
      /**
-     * Find and return a list that contains all item that match the given function
+     * find and return a list that contains all item that match the given function
      * @param matcherFn The matcher function
      */
-    public FindAll(matcherFn:(item: T) => boolean): List<T> {
+    public findAll(matcherFn:(item: T) => boolean): List<T> {
         if(matcherFn == null){
             throw new NullArgumentException("The matcher function must be a non null.");
         }
@@ -402,20 +425,20 @@ export class List<T> implements IList<T>{
         let list = new List<T>();
         for(let i = 0; i < this._array.length; i++){
             if(matcherFn(this._array[i])){
-                list.Add(this._array[i]);
+                list.add(this._array[i]);
             }
         }
         return list;
     }
 
     /**
-     * Find the index of a first item that match the given function.  
-     * @param compareFn The comparer function
+     * find the index of a first item that match the given function.
+     * @param matcherFn The comparer function
      * @default compareFn The default ASCII character comparer
-     * @param start first index of a range
+     * @param startIndex first index of a range
      * @param count Number of element to include in a range
      */
-    public FindIndex(startIndex: number = 0, count: number = this._size, matcherFn: (item: T) => boolean): number
+    public findIndex(matcherFn: (item: T) => boolean, startIndex: number = 0, count: number = this._size): number
     {
             if(startIndex < 0){
                 throw new ArgumentOutOfRangeException("The index must not be a negative number");
@@ -443,10 +466,10 @@ export class List<T> implements IList<T>{
 
 
     /**
-     * Find and return the last item that match the given function
+     * find and return the last item that match the given function
      * @param matcherFn The matcher function
      */
-    public FindLast(matcherFn: (item: T) => boolean):T | null
+    public findLast(matcherFn: (item: T) => boolean):T | null
     {
         if(matcherFn == null){
             throw new NullArgumentException("The matcher function must be a non null.");
@@ -462,7 +485,7 @@ export class List<T> implements IList<T>{
         return null;
     }
 
-    public FindLastIndex(startIndex: number, count:number, matcherFn: (item: T) => boolean): number
+    public findLastIndex(startIndex: number, count:number, matcherFn: (item: T) => boolean): number
     {
         if(matcherFn == null){
             throw new NullArgumentException("The matcher function must be a non null.");
@@ -502,12 +525,13 @@ export class List<T> implements IList<T>{
         return -1;
     }
     
-    public ForEach(callbackFn: (item: T, index: number) => void){
+    public forEach(callbackFn: (item: T, index: number, stopper: Stopper) => void){
         if(callbackFn == null){
             throw new NullArgumentException("The callback function must be a non null.");
         }
 
         let version = this._version;
+        let stp = new Stopper();
         for (let i = 0; i < this._size; i++)
         {
             // Don't edit list during the loop
@@ -516,7 +540,10 @@ export class List<T> implements IList<T>{
             {
                 break;
             }
-            callbackFn(this._array[i], i);
+            callbackFn(this._array[i], i, stp);
+            if(stp.IsStopped){
+                break;
+            }
         }
     }
 
@@ -525,7 +552,7 @@ export class List<T> implements IList<T>{
      * Check that the given function matchs all the item of the list
      * @param matcherFn 
      */
-    public TrueForAll(matcherFn: (item: T) => boolean): boolean
+    public trueForAll(matcherFn: (item: T) => boolean): boolean
     {
         if(matcherFn == null){
             throw new NullArgumentException("The matcher function must be a non null.");
@@ -545,14 +572,14 @@ export class List<T> implements IList<T>{
      * This method removes all items which matches the predicate.
      * @param matcherFn
      */
-    public RemoveAll(matcherFn: (item: T) => boolean): number {
+    public removeAll(matcherFn: (item: T) => boolean): number {
         if(matcherFn == null){
             throw new NullArgumentException("The matcher function must be a non null.");
         }
 
         let freeIndex = 0;
 
-        // Find the first item which needs to be removed.
+        // find the first item which needs to be removed.
         while (freeIndex < this._size && !matcherFn(this._array[freeIndex])) freeIndex++;
         if (freeIndex >= this._size) return 0;
 
@@ -560,7 +587,7 @@ export class List<T> implements IList<T>{
 
         while (current < this._size)
         {
-            // Find the first item which needs to be kept.
+            // find the first item which needs to be kept.
             while (current < this._size && matcherFn(this._array[current])) current++;
 
             if (current < this._size)
@@ -570,7 +597,7 @@ export class List<T> implements IList<T>{
             }
         }
 
-        // Clear the elements so that the gc can reclaim the references.
+        // clear the elements so that the gc can reclaim the references.
         for(let i = this._size - 1; i > this._size - freeIndex; i--){
             this._array.pop();
         }
@@ -581,18 +608,11 @@ export class List<T> implements IList<T>{
         return result;
     }
 
-
-    Count(): number {
-        return this._size;
-    }
-    IsReadOnly(): boolean {
-        return false;
-    }
     
     /**
      * Clears the contents of List.
      */
-    Clear(): void {
+    clear(): void {
         this._version++;
         for(let i = 0; i < this._array.length; i++){
             this._array.shift();
@@ -602,10 +622,10 @@ export class List<T> implements IList<T>{
 
 
     /**
-     * Contains returns true if the specified element is in the List.
+     * contains returns true if the specified element is in the List.
      */
-    Contains(item: T): boolean {
-        return this._size != 0 && this.IndexOf(item) > -1;
+    contains(item: T): boolean {
+        return this._size != 0 && this.indexOf(item) > -1;
     }
 
 
@@ -614,27 +634,33 @@ export class List<T> implements IList<T>{
      * @param array Array that must receive the items of the list
      * @param startingIndex 
      */
-    CopyTo(array: T[], startingIndex = 0): void {
+    copyTo(array: T[], startingIndex = 0): void {
         if(!array){
             throw new NullArgumentException("The copy require a non null array");
         }
         for(let i = startingIndex, j = 0; i < this._size; i++, j++){
-            array[i] = this.Get(j);
+            array[j] = this.get(i);
         }
     }
 
     /**
      * Returns an enumerator for this list with the given
      * permission for removal of elements. If modifications made to the list 
-     * while an enumeration is in progress, the MoveNext and 
+     * while an enumeration is in progress, the moveNext and
      * GetObject methods of the enumerator will throw an exception.
      */
-    GetEnumerator(): IEnumerator<T> {
+    getEnumerator(): IEnumerator<T> {
         return new ListEnumerator(this);
     }
 
 
-    public GetRange(index: number, count: number){
+    /**
+     * Returns a collection containing the items beginning at {@link @param index}
+     * and contains the {@link @param count} next item.
+     * @param index The starting index. {@link @default 0}.
+     * @param count The number of item to insert in range. {@link @default list.size-index}.
+     */
+    public getRange(index: number=0, count=this.size-index){
         if(index < 0){
             throw new ArgumentOutOfRangeException();
         }
@@ -650,19 +676,61 @@ export class List<T> implements IList<T>{
         let copy = new List<T>();
 
         for(let i = index; i < count; i++){
-            copy.Add(this.Get(i));
+            copy.add(this.get(i));
         }
+
+        return copy;
     }
 
+    /**
+     * Returns a new List<T> with same element.
+     * @deprecated Use {@link getRange()} instead.
+     */
+    clone():List<T>{
+        const clone = new List<T>();
+        this.forEach(v => clone.add(v));
+        return clone;
+    }
 
     
     /**
-     * ToArray returns an array containing the contents of the List.
+     * toArray returns an array containing the contents of the List.
      * This requires copying the List
      * @returns An array that contains all items of a list
      */
-    ToArray(): T[] {
+    toArray(): T[] {
         let copy: T[] = [];
         return copy.concat(this._array);
+    }
+
+    /**
+     * Iterator to support a for..of operator.
+     */
+    [Symbol.iterator](): EnumeratorIterator<any> {
+        return new EnumeratorIterator(this.getEnumerator());
+    }
+
+    public toString(){
+        let value = "[ ";
+        for (let i = 0; i < this._size - 1; i++){
+            value += this.get(i).toString() + ", ";
+        }
+
+        value += this.get(this._size - 1) + " ]";
+        return value;
+    }
+
+
+}
+
+class Stopper {
+    private _isStopped = false;
+
+    public Stop(){
+        this._isStopped = true;
+    }
+
+    get IsStopped(){
+        return this._isStopped;
     }
 }
